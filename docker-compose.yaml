@@ -1,0 +1,53 @@
+version: "3.3"
+
+services:
+  app:
+    build: ./app
+    container_name: shiftapp
+    command: ["yarn", "start"]
+    volumes:
+      - ./app:/home/node/app
+      - nmapp:/home/node/app/node_modules
+    networks:
+      - shiftnet
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  api:
+    build: ./api
+    container_name: shiftapi
+    command: ["yarn", "dev"]
+    environment:
+      - APP_SETTINGS_FILE_PATH=/home/node/api/config/appSettings.json
+    volumes:
+      - ./api:/home/node/api
+      - nmapi:/home/node/api/node_modules
+    networks:
+      - shiftnet
+    ports:
+      - "3031:3031"
+    depends_on:
+      - db
+
+  db:
+    image: orientdb:3.0.14
+    container_name: shiftodb
+    environment:
+      - ORIENTDB_ROOT_PASSWORD=rootpwd
+    networks:
+      - shiftnet
+    ports:
+      - "2424:2424"
+      - "2480:2480"
+    volumes:
+      - "./db/data:/orientdb/databases"
+      - "./db/back:/orientdb/backup"
+
+networks:
+  shiftnet:
+
+volumes:
+  nmapp:
+  nmapi:
