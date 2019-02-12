@@ -1,56 +1,95 @@
 const fastify = require('fastify')();
+const uuidv4 = require('uuid/v4');
 const utils = require('./utils');
 const db = require('./db');
 
 fastify.register(
   require('fastify-cors'), {
     origin: /.*/,
-    methods: ['GET', 'POST'],
-  })
+    methods: ['GET', 'POST', 'PUT'],
+  }
+);
 
-fastify.get('/:name', async (req, res) => {
-  const name = req.params.name || 'Root';
-  console.log(`Name: ${name}`);
+fastify.get('/employees', async (req, res) => {
+  // Returns the org. chart as a collection of nodes and edges.
+  console.log('Root!');
   const query = `
-    MATCH (b:Employee {name: {name}})
+    MATCH (b:Employee {name: 'Root'})
     MATCH p = shortestPath( (b)<-[:BOSS*0..]-(e) )
     UNWIND nodes(p) as n
     UNWIND relationships(p) as r
     RETURN collect(DISTINCT n) as nodes, collect(DISTINCT r) as paths
   `;
   return await db
-  .cypher(query, {name})
+    .cypher(query)
+    .then(res => {
+      return utils.extract(res);
+    })
+    .catch(err => {
+      console.log(err);
+      return {error: err.message};
+    });
+});
+
+fastify.post('/employees', async (req, res) => {
+  // Adds a new employee the org. chart.
+  const {name, parent} = req.body;
+  const eid = uuidv4();
+  console.log(`Adding: ${name}`);
+  const query = `
+    MATCH (p:Employee {eid: {parent}})
+    WITH p
+    CREATE (emp:Employee {eid: {eid}, name: {name}})
+    CREATE (p)<-[:BOSS]-(emp)
+  `;
+  return await db
+    .cypher(query, {eid, name, parent})
+    .then(() => ({message: `Created: ${name} (${eid}) under ${parent}`}))
+    .catch(err => {
+      console.log(err);
+      return {error: err.message};
+    });
+});
+
+fastify.get('/employees/:eid', async (req, res) => {
+  const eid = req.params.eid;
+  console.log(`EID: ${eid}`);
+  const query = `
+    MATCH (b:Employee {eid: {eid}})
+    MATCH p = shortestPath( (b)<-[:BOSS*0..]-(e) )
+    UNWIND nodes(p) as n
+    UNWIND relationships(p) as r
+    RETURN collect(DISTINCT n) as nodes, collect(DISTINCT r) as paths
+  `;
+  return await db
+  .cypher(query, {eid})
   .then(res => {
     return utils.extract(res);
   })
   .catch(err => {
     console.log(err);
-    return {message: err.message};
+    return {error: err.message};
   });
 });
 
-fastify.get('/move/:child/:parent', async (req, res) => {
-  const {child, parent} = req.params;
-  console.log(`Moving: ${child} to ${parent}`);
+fastify.put('/employees/:eid', async (req, res) => {
+  const {eid} = req.params;
+  const {parent} = req.body;
+  console.log(`Moving: ${eid} to ${parent}`);
   const query = `
-    MATCH (p:Employee {name: {parent}})
-    MATCH (:Employee)<-[rel:BOSS]-(emp:Employee {name: {child}})
+    MATCH (p:Employee {eid: {parent}})
+    MATCH (:Employee)<-[rel:BOSS]-(emp:Employee {eid: {eid}})
     WITH p, rel, emp
     CREATE (p)<-[:BOSS]-(emp)
     DELETE rel
   `;
   return await db
-  .cypher(query, {child, parent})
-  .then(() => ({message: `Moved: ${child} to ${parent}`}))
+  .cypher(query, {eid, parent})
+  .then(() => ({message: `Moved: ${eid} to ${parent}`}))
   .catch(err => {
     console.log(err);
-    return {message: err.message};
+    return {error: err.message};
   });
-});
-
-fastify.post('/move', async (req, res) => {
-  console.log(req.body);
-  return {message: req.body};
 });
 
 const start = async () => {

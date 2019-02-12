@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Button, Col, Row } from 'antd';
-import Graph from 'react-graph-vis';
+import { Avatar, Button, Col, Row } from 'antd';
+import AddEmployeeForm from './AddEmployeeForm'
+import EmployeeTree from './EmployeeTree'
 import './App.css';
 
 class App extends Component {
@@ -8,6 +9,27 @@ class App extends Component {
     nodes: [],
     edges: [],
     nodeMap: {},
+    visible: false,
+  }
+  showModal = () => {
+    this.setState({ visible: true });
+  }
+  handleCancel = () => {
+    this.setState({ visible: false });
+  }
+  handleCreate = () => {
+    const form = this.formRef.props.form;
+    form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
+      console.log('Received values of form: ', values);
+      form.resetFields();
+      this.setState({ visible: false });
+    });
+  }
+  saveFormRef = (formRef) => {
+    this.formRef = formRef;
   }
   componentDidMount () {
     const config = {
@@ -19,16 +41,16 @@ class App extends Component {
       },
       redirect: 'follow',
     }
-    fetch('http://localhost:3031/Root', config)
+    fetch('http://localhost:3031/employees', config)
     .then(resp => this.handleErrors(resp))
     .then(json => {
       if (!json.message) {
-        console.log(json)
         const {nodes, edges} = json;
         const nodeMap = nodes.reduce(
           (map, node) => ({...map, [node.id]: node}), {}
         );
         this.setState({nodes, edges, nodeMap});
+        console.info(nodeMap);
       }
     })
     .catch(err => console.error(err));
@@ -53,42 +75,28 @@ class App extends Component {
     const {nodes, edges} = this.state;
     const graph = {nodes, edges};
 
-    const options = {
-      layout: {
-        hierarchical: true
-      },
-      edges: {
-        color: "#000000"
-      }
-    };
-
-    const events = {
-      select: function(event) {
-        var { nodes, edges } = event;
-        console.group('Clicked!');
-        console.info('Nodes:', nodes);
-        console.info('Edges:', edges);
-        console.groupEnd();
-      }
-    }
-
     return (
       <div className={'App'}>
-        <p>Awesome Inc.</p>
-        <Row type="flex" justify="space-around" align="top">
-          <Col span={16}>
-            <Graph
-              className={'Graph'}
-              graph={graph}
-              options={options}
-              events={events}
-              style={{height:'800px'}}
-            />
+        <Row type="flex" justify="space-around" align="middle">
+          <Col span={23}>
+            <Avatar>U</Avatar> Amazing Co.
           </Col>
-          <Col span={6}>
-            <p className={'height-100'}>
-              Lorem ipsum&hellip;
-            </p>
+        </Row>
+        <Row type="flex" justify="space-around" align="top">
+          <Col span={19}>
+            {EmployeeTree(graph)}
+          </Col>
+          <Col span={4}>
+            <Button type="primary" onClick={this.showModal}>
+              Add Employee
+            </Button>
+            <AddEmployeeForm
+              wrappedComponentRef={this.saveFormRef}
+              visible={this.state.visible}
+              onCancel={this.handleCancel}
+              onCreate={this.handleCreate}
+              nodes={nodes}
+            />
           </Col>
         </Row>
       </div>
