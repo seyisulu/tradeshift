@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import Graph from 'react-graph-vis';
 
 export default function EmployeeTree (graph) {

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Avatar, Button, Col, Row } from 'antd';
+import { Button, Col, Row } from 'antd';
 import AddEmployeeForm from './AddEmployeeForm'
+import MoveEmployeeForm from './MoveEmployeeForm'
 import EmployeeTree from './EmployeeTree'
 import './App.css';
 
@@ -10,12 +11,19 @@ class App extends Component {
     edges: [],
     nodeMap: {},
     visible: false,
+    moveVisible: false,
   }
   showModal = () => {
     this.setState({ visible: true });
   }
+  showMoveModal = () => {
+    this.setState({ moveVisible: true });
+  }
   handleCancel = () => {
     this.setState({ visible: false });
+  }
+  handleMoveCancel = () => {
+    this.setState({ moveVisible: false });
   }
   handleCreate = () => {
     const form = this.formRef.props.form;
@@ -42,6 +50,40 @@ class App extends Component {
             this.refreshData();
             form.resetFields();
             this.setState({ visible: false });
+          }
+        })
+        .catch(err => console.error(err));
+    });
+  }
+  handleMove = () => {
+    const form = this.formRef.props.form;
+    form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
+      const {boss, eid} = values;
+      if (boss === eid) {
+        alert('Please select different employee as boss.')
+        return;
+      }
+      const config = {
+        method: 'PUT',
+        mode: 'cors',
+        body: JSON.stringify({boss}),
+        cache: 'no-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        redirect: 'follow',
+      }
+      fetch(`http://localhost:3031/employees/${eid}`, config)
+        .then(resp => this.handleErrors(resp))
+        .then(json => {
+          if (!json.error) {
+            console.info('Successfully moved employee.')
+            this.refreshData();
+            form.resetFields();
+            this.setState({ moveVisible: false });
           }
         })
         .catch(err => console.error(err));
@@ -99,11 +141,6 @@ class App extends Component {
 
     return (
       <div className={'App'}>
-        <Row type="flex" justify="space-around" align="middle">
-          <Col span={23}>
-            <Avatar>U</Avatar> Amazing Co.
-          </Col>
-        </Row>
         <Row type="flex" justify="space-around" align="top">
           <Col span={19}>
             {EmployeeTree(graph)}
@@ -117,6 +154,17 @@ class App extends Component {
               visible={this.state.visible}
               onCancel={this.handleCancel}
               onCreate={this.handleCreate}
+              nodes={nodes}
+            />
+            <br/>
+            <Button type="secondary" onClick={this.showMoveModal}>
+              Move Employee
+            </Button>
+            <MoveEmployeeForm
+              wrappedComponentRef={this.saveFormRef}
+              visible={this.state.moveVisible}
+              onCancel={this.handleMoveCancel}
+              onMove={this.handleMove}
               nodes={nodes}
             />
           </Col>

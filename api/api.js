@@ -75,18 +75,18 @@ fastify.get('/employees/:eid', async (req, res) => {
 
 fastify.put('/employees/:eid', async (req, res) => {
   const {eid} = req.params;
-  const {parent} = req.body;
-  console.log(`Moving: ${eid} to ${parent}`);
+  const {boss} = req.body;
+  console.log(`Moving: ${eid} to ${boss}`);
   const query = `
-    MATCH (p:Employee {eid: {parent}})
+    MATCH (p:Employee {eid: {boss}})
     MATCH (:Employee)<-[rel:BOSS]-(emp:Employee {eid: {eid}})
     WITH p, rel, emp
     CREATE (p)<-[:BOSS]-(emp)
     DELETE rel
   `;
   return await db
-  .cypher(query, {eid, parent})
-  .then(() => ({message: `Moved: ${eid} to ${parent}`}))
+  .cypher(query, {eid, boss})
+  .then(() => ({message: `Moved: ${eid} to ${boss}`}))
   .catch(err => {
     console.log(err);
     return {error: err.message};

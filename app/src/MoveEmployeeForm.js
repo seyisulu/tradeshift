@@ -1,42 +1,50 @@
 import React, { Component } from 'react';
 import {
-  Form, Input, Modal, Select
+  Form, Modal, Select
 } from 'antd';
 
 const Option = Select.Option;
 
-const AddEmployeeForm = Form.create({ name: 'empform' })(
+const MoveEmployeeForm = Form.create({ name: 'empform' })(
   // eslint-disable-next-line
   class extends Component {
     render() {
       const {
-        visible, onCancel, onCreate, form, nodes
+        visible, onCancel, onMove, form, nodes
       } = this.props;
       const { getFieldDecorator } = form;
       return (
         <Modal
           visible={visible}
-          title="Add New Employee"
-          okText="Create"
+          title="Move Employee"
+          okText="Move"
           onCancel={onCancel}
-          onOk={onCreate}
+          onOk={onMove}
         >
           <Form layout="vertical">
             <Form.Item label="Name">
-              {getFieldDecorator('name', {
+              {getFieldDecorator('eid', {
                 rules: [{
                   required: true,
-                  message: 'Please input the employee name'
+                  message: 'Please select the employee'
                 }],
               })(
-                <Input />
+                <Select>
+                  {
+                    nodes.map(
+                      n => (
+                        <Option key={n.id} value={n.eid}>{n.label}</Option>
+                      )
+                    )
+                  }
+                </Select>
               )}
             </Form.Item>
             <Form.Item label="Boss">
               {getFieldDecorator('boss', {
                 rules: [{
                   required: true,
-                  message: 'Please select employee boss'
+                  message: 'Please select new boss'
                 }],
               })(
                 <Select>
@@ -57,4 +65,4 @@ const AddEmployeeForm = Form.create({ name: 'empform' })(
   }
 );
 
-export default AddEmployeeForm;
+export default MoveEmployeeForm;
