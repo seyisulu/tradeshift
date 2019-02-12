@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
-import { Button, Col, Row } from 'antd';
+import { Card, Col, Divider, Icon, Row } from 'antd';
 import AddEmployeeForm from './AddEmployeeForm'
 import MoveEmployeeForm from './MoveEmployeeForm'
 import EmployeeTree from './EmployeeTree'
 import './App.css';
+
+const { Meta } = Card;
 
 class App extends Component {
   state = {
@@ -31,7 +33,6 @@ class App extends Component {
       if (err) {
         return;
       }
-      console.log('Received values of form: ', values);
       const config = {
         method: 'POST',
         mode: 'cors',
@@ -56,7 +57,7 @@ class App extends Component {
     });
   }
   handleMove = () => {
-    const form = this.formRef.props.form;
+    const form = this.moveFormRef.props.form;
     form.validateFields((err, values) => {
       if (err) {
         return;
@@ -91,6 +92,9 @@ class App extends Component {
   }
   saveFormRef = (formRef) => {
     this.formRef = formRef;
+  }
+  saveMoveFormRef = (formRef) => {
+    this.moveFormRef = formRef;
   }
   componentDidMount () {
     this.refreshData();
@@ -142,13 +146,26 @@ class App extends Component {
     return (
       <div className={'App'}>
         <Row type="flex" justify="space-around" align="top">
+          <Col span={23}>
+            <Divider>Awesome Co.</Divider>
+          </Col>
+        </Row>
+        <Row type="flex" justify="space-around" align="top">
           <Col span={19}>
             {EmployeeTree(graph)}
           </Col>
           <Col span={4}>
-            <Button type="primary" onClick={this.showModal}>
-              Add Employee
-            </Button>
+            <Card
+              title={'Organisation Tree'}
+              actions={[
+                <Icon type={'plus-circle'} onClick={this.showModal} theme={'twoTone'}/>,
+                <Icon type={'edit'} onClick={this.showMoveModal} theme={'twoTone'}/>
+              ]}
+            >
+              <Meta
+                description={'Add or move employees with the buttons below.'}
+              />
+            </Card>
             <AddEmployeeForm
               wrappedComponentRef={this.saveFormRef}
               visible={this.state.visible}
@@ -156,12 +173,8 @@ class App extends Component {
               onCreate={this.handleCreate}
               nodes={nodes}
             />
-            <br/>
-            <Button type="secondary" onClick={this.showMoveModal}>
-              Move Employee
-            </Button>
             <MoveEmployeeForm
-              wrappedComponentRef={this.saveFormRef}
+              wrappedComponentRef={this.saveMoveFormRef}
               visible={this.state.moveVisible}
               onCancel={this.handleMoveCancel}
               onMove={this.handleMove}
