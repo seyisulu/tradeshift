@@ -1,119 +1,96 @@
 import React, { Component } from 'react';
-import { Button, Icon, Tree } from 'antd';
-import logo from './logo.svg';
+import { Button, Col, Row } from 'antd';
+import Graph from 'react-graph-vis';
 import './App.css';
 
-const { TreeNode } = Tree;
-const gData = [
-  {
-    title: 'Root',
-    key:'#0.0',
-    children: [
-      {
-        title: 'A',
-        key:'#0.1',
-        children: [
-          {
-            title: 'A-A',
-            key:'#0.4',
-            children: [
-              {
-                title: 'A-A-A',
-                key:'#0.7',
-              },
-              {
-                title: 'A-A-B',
-                key:'#0.8',
-              },
-              {
-                title: 'A-A-C',
-                key:'#0.9',
-              }
-            ]
-          },
-          {
-            title: 'A-B',
-            key:'#0.5',
-          },
-          {
-            title: 'A-C',
-            key:'#0.6',
-          }
-        ]
-      },
-      {
-        title: 'B',
-        key:'#0.2',
-      },
-      {
-        title: 'C',
-        key:'#0.3',
-      }
-    ]
-  }
-];
-
-class AwesomeTree extends Component {
-  state = {
-    gData,
-    expandedKeys: ['0-0', '0-0-0', '0-0-0-0'],
-  }
-
-  onDragEnter = (info) => {
-    console.log(info);
-  }
-
-  onDrop = (info) => {
-    console.log('From:', info.dragNode.props.eventKey);
-    console.log('To:', info.node.props.eventKey);
-  }
-
-  loop = data => {
-    return data.map((item) => {
-      if (item.children && item.children.length) {
-        return (
-          <TreeNode
-            showLine
-            key={item.key}
-            title={item.title}
-            icon={<Icon type={'smile-o'}/>}
-          >
-            {this.loop(item.children)}
-          </TreeNode>
-        );
-      }
-      return <TreeNode key={item.key} title={item.title} />;
-    })
-  }
-
-  render() {
-    console.log('AwesomeTree');
-    return (
-      <Tree
-        className="draggable-tree"
-        draggable
-        onDragEnter={this.onDragEnter}
-        onDrop={this.onDrop}
-      >
-        {this.loop(this.state.gData)}
-      </Tree>
-    );
-  }
-}
-
 class App extends Component {
-  doClick = () => {
-    console.log('Clicked!');
+  state = {
+    nodes: [],
+    edges: [],
+    nodeMap: {},
   }
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <Button type={'primary'} onClick={this.doClick}>Button</Button>
-        </header>
+  componentDidMount () {
+    const config = {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      redirect: 'follow',
+    }
+    fetch('http://localhost:3031/Root', config)
+    .then(resp => this.handleErrors(resp))
+    .then(json => {
+      if (!json.message) {
+        console.log(json)
+        const {nodes, edges} = json;
+        const nodeMap = nodes.reduce(
+          (map, node) => ({...map, [node.id]: node}), {}
+        );
+        this.setState({nodes, edges, nodeMap});
+      }
+    })
+    .catch(err => console.error(err));
+  }
+  handleErrors = (response) => {
+    try {
+      if (!response.ok) {
+        const json = response.json()
+        const err = `${response.statusText}: ${json.message}`
+        console.log(err)
+        return { error: err }
+      }
+      return response.json()
+    } catch (e) {
+      console.group(response.statusText)
+      console.error(e.message)
+      console.groupEnd()
+      return { error: response.statusText }
+    }
+  }
+  render () {
+    const {nodes, edges} = this.state;
+    const graph = {nodes, edges};
 
-        <AwesomeTree/>
+    const options = {
+      layout: {
+        hierarchical: true
+      },
+      edges: {
+        color: "#000000"
+      }
+    };
+
+    const events = {
+      select: function(event) {
+        var { nodes, edges } = event;
+        console.group('Clicked!');
+        console.info('Nodes:', nodes);
+        console.info('Edges:', edges);
+        console.groupEnd();
+      }
+    }
+
+    return (
+      <div className={'App'}>
+        <p>Awesome Inc.</p>
+        <Row type="flex" justify="space-around" align="top">
+          <Col span={16}>
+            <Graph
+              className={'Graph'}
+              graph={graph}
+              options={options}
+              events={events}
+              style={{height:'800px'}}
+            />
+          </Col>
+          <Col span={6}>
+            <p className={'height-100'}>
+              Lorem ipsum&hellip;
+            </p>
+          </Col>
+        </Row>
       </div>
     );
   }

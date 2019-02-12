@@ -2,19 +2,18 @@
   "name": "api",
   "version": "1.0.0",
   "description": "API",
-  "main": "index.js",
+  "main": "api.js",
   "scripts": {
-    "dev": "nodemon ./api.js",
-    "start": "node ./api.js"
+    "dev": "nodemon api.js",
+    "start": "node api.js"
   },
-  "author": "",
+  "author": "Emmanuel Olowosulu",
   "license": "ISC",
   "dependencies": {
     "fastify": "1.14.1",
+    "fastify-cors": "1.0.0",
     "fastify-autoload": "0.6.0",
-    "orientjs": "3.0.3",
     "uuid": "3.3.2",
-    "nconf": "0.10.0",
-    "lodash": "4.17.11"
+    "neode": "0.2.13"
   }
 }
