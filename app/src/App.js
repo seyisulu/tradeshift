@@ -24,14 +24,36 @@ class App extends Component {
         return;
       }
       console.log('Received values of form: ', values);
-      form.resetFields();
-      this.setState({ visible: false });
+      const config = {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(values),
+        cache: 'no-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        redirect: 'follow',
+      }
+      fetch('http://localhost:3031/employees', config)
+        .then(resp => this.handleErrors(resp))
+        .then(json => {
+          if (!json.error) {
+            console.info('Successfully added employee.')
+            this.refreshData();
+            form.resetFields();
+            this.setState({ visible: false });
+          }
+        })
+        .catch(err => console.error(err));
     });
   }
   saveFormRef = (formRef) => {
     this.formRef = formRef;
   }
   componentDidMount () {
+    this.refreshData();
+  }
+  refreshData = () => {
     const config = {
       method: 'GET',
       mode: 'cors',
@@ -42,18 +64,18 @@ class App extends Component {
       redirect: 'follow',
     }
     fetch('http://localhost:3031/employees', config)
-    .then(resp => this.handleErrors(resp))
-    .then(json => {
-      if (!json.message) {
-        const {nodes, edges} = json;
-        const nodeMap = nodes.reduce(
-          (map, node) => ({...map, [node.id]: node}), {}
-        );
-        this.setState({nodes, edges, nodeMap});
-        console.info(nodeMap);
-      }
-    })
-    .catch(err => console.error(err));
+      .then(resp => this.handleErrors(resp))
+      .then(json => {
+        if (!json.error) {
+          const {nodes, edges} = json;
+          const nodeMap = nodes.reduce(
+            (map, node) => ({...map, [node.id]: node}), {}
+          );
+          this.setState({nodes, edges, nodeMap});
+          console.info(nodeMap);
+        }
+      })
+      .catch(err => console.error(err));
   }
   handleErrors = (response) => {
     try {

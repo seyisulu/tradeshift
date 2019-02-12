@@ -5,8 +5,9 @@ const db = require('./db');
 
 fastify.register(
   require('fastify-cors'), {
-    origin: /.*/,
-    methods: ['GET', 'POST', 'PUT'],
+    origin: /localhost/,
+    methods: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'],
+    headers: ['Content-Type', 'Origin', 'X-Requested-With'],
   }
 );
 
@@ -33,18 +34,18 @@ fastify.get('/employees', async (req, res) => {
 
 fastify.post('/employees', async (req, res) => {
   // Adds a new employee the org. chart.
-  const {name, parent} = req.body;
+  const {name, boss} = req.body;
   const eid = uuidv4();
-  console.log(`Adding: ${name}`);
+  console.log(`Adding: ${name} under ${boss}`);
   const query = `
-    MATCH (p:Employee {eid: {parent}})
+    MATCH (p:Employee {eid: {boss}})
     WITH p
     CREATE (emp:Employee {eid: {eid}, name: {name}})
     CREATE (p)<-[:BOSS]-(emp)
   `;
   return await db
-    .cypher(query, {eid, name, parent})
-    .then(() => ({message: `Created: ${name} (${eid}) under ${parent}`}))
+    .cypher(query, {eid, name, boss})
+    .then(() => ({message: `Created: ${name} (${eid}) under ${boss}`}))
     .catch(err => {
       console.log(err);
       return {error: err.message};
